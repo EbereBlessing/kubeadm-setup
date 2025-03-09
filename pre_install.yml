@@ -1,0 +1,31 @@
+---
+- name: Prerequisites for Kubernetes installation
+  hosts: all
+  become: true
+  tasks:
+    - name: Enable kernel modules for Kubernetes
+      modprobe:
+        name: overlay
+        state: present
+
+    - name: Enable br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    - name: Configure sysctl parameters for Kubernetes networking
+      blockinfile:
+        create: yes
+        path: /etc/sysctl.d/kubernetes.conf
+        block: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward = 1
+
+    - name: Apply sysctl settings
+      command: sysctl --system
+
+    - name: Disable swap
+      shell: |
+        sudo swapoff -a
+        sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab

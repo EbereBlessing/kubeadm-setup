@@ -1,0 +1,39 @@
+---
+- hosts: all
+  user: ubuntu
+  become: yes
+  tasks:
+    - name: Add Kubernetes apt repository
+      shell: |
+        sudo apt update -y
+        sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+
+    - name: Update APT package index
+      apt:
+        update_cache: yes
+
+    - name: Install kubelet, kubeadm, and kubectl
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+
+    - name: Mark Kubernetes packages to hold (prevent unintended upgrades)
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Enable and start kubelet service
+      service:
+        name: kubelet
+        state: started
+        enabled: yes

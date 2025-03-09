@@ -1,0 +1,32 @@
+# Installing cri-dockerd across all nodes
+---
+- name: Reinstall and restart cri-dockerd
+  hosts: all
+  become: yes
+  tasks:
+    - name: Download cri-dockerd binary
+      get_url:
+        url: https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.4/cri-dockerd-0.3.4.amd64.tgz
+        dest: /tmp/cri-dockerd-0.3.4.amd64.tgz
+
+    - name: Extract cri-dockerd binary
+      unarchive:
+        src: /tmp/cri-dockerd-0.3.4.amd64.tgz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Move cri-dockerd binary to /usr/local/bin
+      copy:
+        src: /tmp/cri-dockerd/cri-dockerd
+        dest: /usr/local/bin/cri-dockerd
+        mode: '0755'
+        remote_src: yes
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart cri-docker service
+      service:
+        name: cri-dockerd
+        state: started
